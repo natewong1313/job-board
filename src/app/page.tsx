@@ -1,7 +1,13 @@
+import JobsTable from "@/components/jobs-table";
 import Navbar from "@/components/navbar";
-import Image from "next/image";
+import { getJobsQuery } from "@/data/jobs.hook";
+import { getQueryClient } from "@/utils/query-client";
+import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 
 export default function Home() {
+  const queryClient = getQueryClient();
+
+  void queryClient.prefetchQuery(getJobsQuery);
   return (
     <main>
       <div className="flex flex-col max-w-3xl mx-auto">
@@ -18,6 +24,11 @@ export default function Home() {
             companies worldwide, getting you access to top jobs before they hit social
             media platforms like LinkedIn and Indeed.
           </p>
+        </div>
+        <div>
+          <HydrationBoundary state={dehydrate(queryClient)}>
+            <JobsTable />
+          </HydrationBoundary>
         </div>
       </div>
       <div className="bg-gray-100 border-t border-gray-200 w-full h-10">
