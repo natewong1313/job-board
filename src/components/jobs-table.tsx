@@ -1,13 +1,14 @@
 "use client";
-import { getJobsQuery } from "@/data/jobs.hook";
+import { getPaginatedJobsQuery } from "@/data/jobs.hook";
 import { Job } from "@/data/models";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import {
   createColumnHelper,
   flexRender,
   getCoreRowModel,
   useReactTable
 } from "@tanstack/react-table";
+import { useMemo, useState } from "react";
 
 const columnHelper = createColumnHelper<Job>();
 
@@ -39,24 +40,37 @@ const columns = [
   })
 ];
 export default function JobsTable() {
-  const { data } = useSuspenseQuery(getJobsQuery);
+  const [pagination, setPagination] = useState({
+    pageIndex: 0,
+    pageSize: 10
+  });
+
+  const dataQuery = useQuery(getPaginatedJobsQuery(pagination.pageIndex));
+  const defaultData = useMemo(() => [], []);
 
   const table = useReactTable({
-    data,
+    data: dataQuery.data ?? defaultData,
     columns,
-    getCoreRowModel: getCoreRowModel()
+    debugTable: true,
+    manualPagination: true,
+    getCoreRowModel: getCoreRowModel(),
+    rowCount: 10000,
+    onPaginationChange: setPagination,
+    state: {
+      pagination
+    }
   });
 
   return (
-    <div className="p-2">
-      <table className="min-w-full divide-y divide-gray-300">
+    <div>
+      <table className="min-w-full divide-y divide-gray-300 border-separate border-spacing-y-2 border-b border-gray-300">
         <thead>
           {table.getHeaderGroups().map((headerGroup) => (
             <tr key={headerGroup.id}>
               {headerGroup.headers.map((header) => (
                 <th
                   key={header.id}
-                  className="text-left text-sm font-semibold text-gray-900"
+                  className="text-left font-medium border-b border-gray-300 pb-1 text-gray-900"
                 >
                   {header.isPlaceholder
                     ? null
@@ -76,21 +90,74 @@ export default function JobsTable() {
               ))}
             </tr>
           ))}
+          {dataQuery.isLoading
+            ? [...Array(10).keys()].map((i) => (
+                <tr key={i}>
+                  <td className="py-4 bg-gray-200 animate-pulse rounded-l-md"></td>
+                  <td className="bg-gray-200 animate-pulse"></td>
+                  <td className="bg-gray-200 animate-pulse rounded-r-md"></td>
+                </tr>
+              ))
+            : null}
         </tbody>
-        <tfoot>
-          {table.getFooterGroups().map((footerGroup) => (
-            <tr key={footerGroup.id}>
-              {footerGroup.headers.map((header) => (
-                <th key={header.id}>
-                  {header.isPlaceholder
-                    ? null
-                    : flexRender(header.column.columnDef.footer, header.getContext())}
-                </th>
-              ))}
-            </tr>
-          ))}
-        </tfoot>
       </table>
+      <div className="flex justify-between mt-4">
+        <div className="flex items-center space-x-2 font-medium">
+          <button
+            className="rounded w-8 h-8 ring ring-gray-300 text-gray-600 shadow bg-gray-50 hover:bg-gray-100 disabled:hover:bg-gray-50 active:ring-gray-400 disabled:active:ring-gray-200 disabled:opacity-50"
+            onClick={() => table.firstPage()}
+            disabled={!table.getCanPreviousPage()}
+          >
+            {"<<"}
+          </button>
+          <button
+            className="rounded w-8 h-8 ring ring-gray-300 text-gray-600 shadow bg-gray-50 hover:bg-gray-100 disabled:hover:bg-gray-50 active:ring-gray-400 disabled:active:ring-gray-200 disabled:opacity-50"
+            onClick={() => table.previousPage()}
+            disabled={!table.getCanPreviousPage()}
+          >
+            {"<"}
+          </button>
+          <button
+            className="rounded w-8 h-8 ring ring-gray-300 text-gray-600 shadow bg-gray-50 hover:bg-gray-100 disabled:hover:bg-gray-50 active:ring-gray-400 disabled:active:ring-gray-200 disabled:opacity-50"
+            onClick={() => table.nextPage()}
+            disabled={!table.getCanNextPage()}
+          >
+            {">"}
+          </button>
+          <button
+            className="rounded w-8 h-8 ring ring-gray-300 text-gray-600 shadow bg-gray-50 hover:bg-gray-100 disabled:hover:bg-gray-50 active:ring-gray-400 disabled:active:ring-gray-200 disabled:opacity-50"
+            onClick={() => table.lastPage()}
+            disabled={!table.getCanNextPage()}
+          >
+            {">>"}
+          </button>
+          {dataQuery.isFetching && (
+            <div
+              className="animate-spin inline-block size-6 border-2 border-current border-t-transparent ml-2 text-sunshade-300 rounded-full"
+              role="status"
+              aria-label="loading"
+            >
+              <span className="sr-only">Loading...</span>
+            </div>
+          )}
+        </div>
+        <span className="flex items-center gap-1 pl-2">
+          <div>Page</div>
+          <input
+            className="ring ring-gray-300 bg-gray-50 rounded h-8 w-8 p-0 text-center shadow mx-1 font-semibold"
+            type="number"
+            min="1"
+            max={table.getPageCount()}
+            defaultValue={table.getState().pagination.pageIndex + 1}
+            onChange={(e) => {
+              const page = e.target.value ? Number(e.target.value) - 1 : 0;
+              table.setPageIndex(page);
+            }}
+          />
+          <span>of</span>
+          <strong>{table.getPageCount().toLocaleString()}</strong>
+        </span>
+      </div>
     </div>
   );
 }
