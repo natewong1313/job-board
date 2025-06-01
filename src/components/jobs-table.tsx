@@ -20,14 +20,14 @@ const columns = [
   columnHelper.accessor("title", {
     header: "Position",
     cell: (info) => (
-      <p>
-        {info.getValue()}{" "}
-        {within12hrs(info.row.original.updatedAt) && (
-          <span className="rounded-full bg-sunshade-200 text-sm ring ring-sunshade-400 text-sunshade-800 px-2 ml-2">
+      <a href={info.row.original.url} target="_blank" className="group">
+        {within12hrs(info.row.original.updated_at) && (
+          <span className="rounded-full bg-sunshade-200 text-sm ring ring-sunshade-400 text-sunshade-800 px-2 ml-0.5 mr-2">
             new!
           </span>
         )}
-      </p>
+        <span className="group-hover:underline">{info.getValue()} </span>{" "}
+      </a>
     )
   }),
   columnHelper.accessor("company", {
@@ -36,7 +36,23 @@ const columns = [
   }),
   columnHelper.accessor("locations", {
     header: "Locations",
-    cell: (info) => info.getValue().join(", ")
+    cell: (info) => {
+      const locations = info.getValue();
+      if (locations.length == 0) {
+        return "N/A";
+      } else if (locations.length == 1) {
+        return locations[0];
+      } else {
+        return (
+          <p>
+            {locations[0]}{" "}
+            <span className="bg-sunshade-200 text-sunshade-800 p-0.5 ml-1 ring ring-sunshade-400">
+              +{locations.length - 1}
+            </span>
+          </p>
+        );
+      }
+    }
   })
 ];
 export default function JobsTable() {
@@ -63,14 +79,14 @@ export default function JobsTable() {
 
   return (
     <div>
-      <table className="min-w-full divide-y divide-gray-300 border-separate border-spacing-y-2 border-b border-gray-300">
+      <table className="divide-y divide-gray-300 border-separate border-spacing-2 w-full table-fixed">
         <thead>
           {table.getHeaderGroups().map((headerGroup) => (
             <tr key={headerGroup.id}>
               {headerGroup.headers.map((header) => (
                 <th
                   key={header.id}
-                  className="text-left font-medium border-b border-gray-300 pb-1 text-gray-900"
+                  className={`text-left font-medium pb-1 text-gray-900 ${header.index == 0 ? "w-1/2" : "w-1/4"}`}
                 >
                   {header.isPlaceholder
                     ? null
@@ -84,13 +100,13 @@ export default function JobsTable() {
           {table.getRowModel().rows.map((row) => (
             <tr key={row.id}>
               {row.getVisibleCells().map((cell) => (
-                <td key={cell.id} className="py-2">
+                <td key={cell.id} className="py-2 ">
                   {flexRender(cell.column.columnDef.cell, cell.getContext())}
                 </td>
               ))}
             </tr>
           ))}
-          {dataQuery.isLoading
+          {!dataQuery.data && dataQuery.isLoading
             ? [...Array(10).keys()].map((i) => (
                 <tr key={i}>
                   <td className="py-4 bg-gray-200 animate-pulse rounded-l-md"></td>

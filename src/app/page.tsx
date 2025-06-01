@@ -6,10 +6,10 @@ import { getPaginatedJobsQuery } from "@/data/jobs.hook";
 import { getQueryClient } from "@/utils/query-client";
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 
-export default function Home() {
+export default async function Home() {
   const queryClient = getQueryClient();
 
-  void queryClient.prefetchQuery(getPaginatedJobsQuery(0));
+  await queryClient.prefetchQuery(getPaginatedJobsQuery(0));
   return (
     <main>
       <div className="flex flex-col max-w-3xl mx-auto space-y-8">

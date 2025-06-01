@@ -1,9 +1,9 @@
 import { keepPreviousData, queryOptions } from "@tanstack/react-query";
-import { getJobs } from "./jobs.action";
+import { getPaginatedJobs } from "./jobs.action";
 
 export const getPaginatedJobsQuery = (page: number) =>
   queryOptions({
     queryKey: ["getJobs", page],
-    queryFn: getJobs,
+    queryFn: () => getPaginatedJobs(page, 10),
     placeholderData: keepPreviousData
   });
